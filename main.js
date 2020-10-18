@@ -12,6 +12,7 @@ $(document).ready(function () {
   _svg_ = $("svg")
   svgHeight = _svg_.height();
   var svgWidth = _svg_.width();
+  
 
   //Setting the SVG context
   Parabola.svg_context = _svg_;
@@ -105,6 +106,15 @@ $(document).ready(function () {
 /* ------- EXECUTE POINT EVENT ------- */
 /* =================================== */
 
+/*
+  Point event is when the sweep line reaches a new point and a new parable needs to be added in the beach line
+  - A new parabola object is created
+  - Find where this should be located in the beach line and which existing parabola is directly above
+  - if the old parabola exists split it in two, add two segmentws whe the split occurred, add two circle events
+
+
+*/
+
 function pointEvent(x, y) {
   let new_par = new Parabola(beach_line.latestID, x, y, y);
   let search = beach_line.find(new_par); //array with parabola found and position in the list
@@ -172,6 +182,12 @@ function pointEvent(x, y) {
 /* ==================================== */
 /* ------- EXECUTE CIRCLE EVENT ------- */
 /* ==================================== */
+
+/*
+  A circle event is when a parabola shrinks to 0 squeezed between two and needs to be removed.
+  the event takes place when the sweep line is tangent to a cirle defined by three points
+
+*/ 
 
 function circleEvent(ev) {
   let par_deleting = ev.element.par2;
