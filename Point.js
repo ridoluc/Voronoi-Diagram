@@ -9,6 +9,10 @@ class Point{
     this.style = {};
   }
   
+  distanceToPoint(pt){
+    return Math.sqrt( (this._x - pt._x)**2 + (this._y - pt._y)**2);
+  }
+
   appendToSVG(val){
     this.svg_context = val;
     this.toSVG().appendTo(this.svg_context);
