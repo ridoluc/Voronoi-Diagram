@@ -1,13 +1,19 @@
 class VoronoiDiagram {
 	constructor(points) {
 		this.point_list = points;
+		this.reset();
+		this.box_x = 500;
+		this.box_y = 300;
+	}
+
+	reset(){
 		this.event_list = new SortedQueue();
 		this.beachline_root = null;
 		this.voronoi_vertex = [];
 		this.edges = [];
 	}
-
 	update() {
+		this.reset();
 		let points = [];
 		for (const p of this.point_list) points.push(new Event("point", p));
 		this.event_list.points = points;
@@ -17,6 +23,7 @@ class VoronoiDiagram {
 			if (e.type == "point") this.point_event(e.position);
 			else if (e.active) this.circle_event(e);
 		}
+		this.complete_segments();
 	}
 
 	// Input: Point
@@ -26,20 +33,19 @@ class VoronoiDiagram {
 		else {
 			while (
 				q.right != null &&
-				this.parabola_intersection(p.y, q.focus, q.right.focus) < p.x
+				this.parabola_intersection(p.y, q.focus, q.right.focus) <= p.x
 			) {
 				q = q.right;
 			}
 
-			let e_qp = new Edge(q.focus, p);
-			let e_pq = new Edge(p, q.focus);
+			let e_qp = new Edge(q.focus, p, p.x);
 
-			let arc_p = new Arc(q, null, p, e_qp, e_pq);
-			let arc_qr = new Arc(arc_p, q.right, q.focus, e_pq, q.edge.right);
+			let arc_p = new Arc(q, null, p, e_qp, e_qp);
+			let arc_qr = new Arc(arc_p, q.right, q.focus, e_qp, q.edge.right);
+			if (q.right) q.right.left = arc_qr;
 			arc_p.right = arc_qr;
 			q.right = arc_p;
 			q.edge.right = e_qp;
-			if (q.right) q.right.left = arc_qr;
 
 			// Disable old event
 			if (q.event) q.event.active = false;
@@ -48,7 +54,7 @@ class VoronoiDiagram {
 			this.add_circle_event(p, q);
 			this.add_circle_event(p, arc_qr);
 
-			// this.edges.push(e_qp);
+			this.edges.push(e_qp);
 			// this.edges.push(e_pq);
 		}
 	}
@@ -74,12 +80,15 @@ class VoronoiDiagram {
 
 		this.voronoi_vertex.push(e.vertex);
 		this.edges.push(edge_new);
+		
+		// Set edges end point
+		arc.edge.left.endpoint = arc.edge.right.endpoint = edge_new.endpoint = e.vertex;
 	}
 
 	add_circle_event(p, arc) {
 		if (arc.left && arc.right){
-			let a = arc.focus;
-			let b = arc.left.focus;
+			let a = arc.left.focus;
+			let b = arc.focus;
 			let c = arc.right.focus;
 
 			//Compute sine of angle between focii. if positive then edges intersect  
@@ -87,7 +96,7 @@ class VoronoiDiagram {
 				let new_inters = this.edge_intersection(arc.edge.left, arc.edge.right);
 				let circle_radius = Math.sqrt((new_inters.x - arc.focus.x) ** 2 + (new_inters.y - arc.focus.y) ** 2)
 				let event_pos = circle_radius + new_inters.y;
-				if (event_pos > p.y) {
+				if (event_pos > p.y && new_inters.y < this.box_y) {		// This is important new_inters.y < this.box_y
 					let e = new Event(
 						"circle",
 						new Point(new_inters.x, event_pos),
@@ -134,6 +143,46 @@ class VoronoiDiagram {
 		let y = e1.m * x + e1.q;
 		return new Point(x, y);
 	}
+
+	complete_segments(){
+
+		for(let e of this.edges){
+			let x,y,p;
+			let ends_numb = e.ends.length;
+			if(ends_numb == 0){
+				//End 1
+				y = 0;
+				x = Math.min(this.box_x, Math.max(0, (y-e.q)/e.m));
+				y = e.m*x+e.q;
+				let p = new Point(x,y);
+				e.endpoint = p;
+				this.voronoi_vertex.push(p);
+				//End 2
+				y = this.box_y;
+				x = Math.min(this.box_x, Math.max(0, (y-e.q)/e.m));
+				y = e.m*x+e.q;
+				p = new Point(x,y);
+				e.endpoint = p;
+				this.voronoi_vertex.push(p);
+			}
+			else if(ends_numb == 1){
+				let e1 = e.ends[0];
+				if(!e.direction){
+					x = this.parabola_intersection(this.box_y*10, e.arc.left, e.arc.right);
+					y = e.m*x+e.q;
+					e.direction = new Point(x,y);
+				}
+				e1.y - e.direction.y >0 ? y = 0 : y = this.box_y; 
+				x = Math.min(this.box_x, Math.max(0, (y-e.q)/e.m));
+				y = e.m*x+e.q;
+				p = new Point(x,y);
+				e.endpoint = p;
+				this.voronoi_vertex.push(p);
+			}
+			else if (ends_numb >2)throw new Error("segment with more than 2 endpoints");
+
+		}
+	}
 }
 
 class Arc {
@@ -154,14 +203,18 @@ class Point {
 }
 
 class Edge {
-	constructor(p1, p2) {
+	constructor(p1, p2, dir) {
 		this.m = -(p1.x - p2.x) / (p1.y - p2.y);
 		this.q =
 			(0.5 * (p1.x ** 2 - p2.x ** 2 + p1.y ** 2 - p2.y ** 2)) /
 			(p1.y - p2.y);
 		this.arc = { left: p1, right: p2 };
-		this.end1 = null;
-		this.end2 = null;
+		this.ends = [];
+		this.direction = null;
+		if(dir) this.direction = new Point(dir, this.m*dir+this.q);
+	}
+	set endpoint(p){
+		this.ends.push(p);
 	}
 }
 

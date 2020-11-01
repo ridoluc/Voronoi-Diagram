@@ -16,17 +16,19 @@ svg{
   fill:red;
 }
 
+.segment_svg{
+  stroke: rgb(205, 207, 239);
+  stroke-width: 0.4;
+  fill: transparent;
+}
+
 .vertex_svg{
   stroke: black;
   stroke-width: 1;
   fill: transparent
 };
 
-.segment_svg{
-  stroke: rgb(205, 207, 239);
-  stroke-width: 0.4;
-  fill: transparent;
-}
+
 
 #parab-list{
   margin-top: 40px;
