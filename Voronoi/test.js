@@ -1,11 +1,11 @@
 let points = [
-    new Point(464,166.125),
-    new Point(395,52.125),
-    new Point(345,183.125),
-    new Point(220,165.125),
-    new Point(277,83.125),
-    new Point(127,242.125),
-    new Point(370,256.125)
+    new Point(91,168.125),
+    new Point(255,228.125),
+    new Point(412,225.125),
+    // new Point(220,165.125),
+    // new Point(277,83.125),
+    // new Point(127,242.125),
+    // new Point(370,256.125)
 ];
 
 let vor, gr, _svg_; 
@@ -34,7 +34,12 @@ $("svg").on("click", function (event) {
     let y = event.pageY - $(this).offset().top;
 
     /* Add point */
-    points.push(new Point(x, y));
+    let add = true;
+    for(const p of points){
+        let d = Math.sqrt((x-p.x)**2+(y-p.y)**2);
+        if(d<3) add = false;
+    }
+    if(add)points.push(new Point(x, y));
     vor.point_list = points;
     vor.update();
     draw();

@@ -6,7 +6,7 @@ class VoronoiDiagram {
 		this.box_y = 300;
 	}
 
-	reset(){
+	reset() {
 		this.event_list = new SortedQueue();
 		this.beachline_root = null;
 		this.voronoi_vertex = [];
@@ -55,7 +55,6 @@ class VoronoiDiagram {
 			this.add_circle_event(p, arc_qr);
 
 			this.edges.push(e_qp);
-			// this.edges.push(e_pq);
 		}
 	}
 
@@ -78,25 +77,44 @@ class VoronoiDiagram {
 		this.add_circle_event(p, arc.left);
 		this.add_circle_event(p, arc.right);
 
-		this.voronoi_vertex.push(e.vertex);
 		this.edges.push(edge_new);
-		
+
+		// if (
+		// 	e.vertex.x >= 0 &&
+		// 	e.vertex.x <= this.box_x &&
+		// 	e.vertex.y >= 0 &&
+		// 	e.vertex.y <= this.box_y
+		// ) {
+			this.voronoi_vertex.push(e.vertex);
+			arc.edge.left.endpoint = arc.edge.right.endpoint = edge_new.endpoint =
+				e.vertex;
+		// } else {
+		// 	arc.edge.left.direction = arc.edge.right.direction = edge_new.direction =
+		// 		e.vertex;
+		// }
+
 		// Set edges end point
-		arc.edge.left.endpoint = arc.edge.right.endpoint = edge_new.endpoint = e.vertex;
 	}
 
 	add_circle_event(p, arc) {
-		if (arc.left && arc.right){
+		if (arc.left && arc.right) {
 			let a = arc.left.focus;
 			let b = arc.focus;
 			let c = arc.right.focus;
 
-			//Compute sine of angle between focii. if positive then edges intersect  
-			if ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y) > 0){
-				let new_inters = this.edge_intersection(arc.edge.left, arc.edge.right);
-				let circle_radius = Math.sqrt((new_inters.x - arc.focus.x) ** 2 + (new_inters.y - arc.focus.y) ** 2)
+			//Compute sine of angle between focii. if positive then edges intersect
+			if ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y) > 0) {
+				let new_inters = this.edge_intersection(
+					arc.edge.left,
+					arc.edge.right
+				);
+				let circle_radius = Math.sqrt(
+					(new_inters.x - arc.focus.x) ** 2 +
+						(new_inters.y - arc.focus.y) ** 2
+				);
 				let event_pos = circle_radius + new_inters.y;
-				if (event_pos > p.y && new_inters.y < this.box_y) {		// This is important new_inters.y < this.box_y
+				if (event_pos > p.y && new_inters.y < this.box_y) {
+					// This is important new_inters.y < this.box_y
 					let e = new Event(
 						"circle",
 						new Point(new_inters.x, event_pos),
@@ -144,44 +162,44 @@ class VoronoiDiagram {
 		return new Point(x, y);
 	}
 
-	complete_segments(){
-
-		for(let e of this.edges){
-			let x,y,p;
+	complete_segments() {
+		for (let e of this.edges) {
+			let x, y, p;
 			let ends_numb = e.ends.length;
-			if(ends_numb == 0){
+			if (ends_numb == 0) {
 				//End 1
-				y = 0;
-				x = Math.min(this.box_x, Math.max(0, (y-e.q)/e.m));
-				y = e.m*x+e.q;
-				let p = new Point(x,y);
-				e.endpoint = p;
-				this.voronoi_vertex.push(p);
+				this.edge_limit(e, 0);
 				//End 2
-				y = this.box_y;
-				x = Math.min(this.box_x, Math.max(0, (y-e.q)/e.m));
-				y = e.m*x+e.q;
-				p = new Point(x,y);
-				e.endpoint = p;
-				this.voronoi_vertex.push(p);
-			}
-			else if(ends_numb == 1){
+				this.edge_limit(e, this.box_y);
+			} else if (ends_numb == 1) {
+				let y;
 				let e1 = e.ends[0];
-				if(!e.direction){
-					x = this.parabola_intersection(this.box_y*10, e.arc.left, e.arc.right);
-					y = e.m*x+e.q;
-					e.direction = new Point(x,y);
+				if(e1.y<0) {
+					e.ends = [];
+					this.edge_limit(e,0);
 				}
-				e1.y - e.direction.y >0 ? y = 0 : y = this.box_y; 
-				x = Math.min(this.box_x, Math.max(0, (y-e.q)/e.m));
-				y = e.m*x+e.q;
-				p = new Point(x,y);
-				e.endpoint = p;
-				this.voronoi_vertex.push(p);
-			}
-			else if (ends_numb >2)throw new Error("segment with more than 2 endpoints");
-
+				if (!e.direction) {
+					x = this.parabola_intersection(
+						this.box_y * 10,
+						e.arc.left,
+						e.arc.right
+					); //check this *10 <<------
+					y = e.m * x + e.q;
+					e.direction = new Point(x, y);
+				}
+				e1.y - e.direction.y > 0 ? (y = 0) : (y = this.box_y);
+				this.edge_limit(e, y);
+			} else if (ends_numb > 2)
+				throw new Error("segment with more than 2 endpoints");
 		}
+	}
+
+	edge_limit(e, y_lim) {
+		let x = Math.min(this.box_x, Math.max(0, (y_lim - e.q) / e.m));
+		let y = e.m * x + e.q;
+		let p = new Point(x, y);
+		e.endpoint = p;
+		this.voronoi_vertex.push(p);
 	}
 }
 
@@ -211,9 +229,9 @@ class Edge {
 		this.arc = { left: p1, right: p2 };
 		this.ends = [];
 		this.direction = null;
-		if(dir) this.direction = new Point(dir, this.m*dir+this.q);
+		if (dir) this.direction = new Point(dir, this.m * dir + this.q);
 	}
-	set endpoint(p){
+	set endpoint(p) {
 		this.ends.push(p);
 	}
 }
