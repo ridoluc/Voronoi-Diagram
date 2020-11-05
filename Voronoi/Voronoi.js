@@ -85,9 +85,9 @@ class VoronoiDiagram {
 		// 	e.vertex.y >= 0 &&
 		// 	e.vertex.y <= this.box_y
 		// ) {
-			this.voronoi_vertex.push(e.vertex);
-			arc.edge.left.endpoint = arc.edge.right.endpoint = edge_new.endpoint =
-				e.vertex;
+		this.voronoi_vertex.push(e.vertex);
+		arc.edge.left.endpoint = arc.edge.right.endpoint = edge_new.endpoint =
+			e.vertex;
 		// } else {
 		// 	arc.edge.left.direction = arc.edge.right.direction = edge_new.direction =
 		// 		e.vertex;
@@ -163,22 +163,28 @@ class VoronoiDiagram {
 	}
 
 	complete_segments() {
-		for (let e of this.edges) {
+		for (let i = 0; i < this.edges.length; i++) {
+			let e = this.edges[i];
 			let x, y, p;
-			let ends_numb = e.ends.length;
-			if (ends_numb == 0) {
-				//End 1
-				this.edge_limit(e, 0);
-				//End 2
-				this.edge_limit(e, this.box_y);
-			} else if (ends_numb == 1) {
-				let y;
-				let e1 = e.ends[0];
-				if(e1.y<0) {
-					e.ends = [];
-					this.edge_limit(e,0);
+
+			if (e.ends[1]) {
+				p = e.ends[1];
+				if (this.point_outside(p)) {
+					let p2 = e.ends[0];
+					if (this.point_outside(p2)) {
+						this.edges[i] = null; // Remove edge as both ends are outside
+					} else {
+						e.ends.pop();
+						p.y - p2.y > 0 ? (y = this.box_y) : (y = 0);
+						this.edge_limit(e, y);
+					}
 				}
+			} else if (e.ends[0]) {
+				p = e.ends[0];
+				let end_outside = this.point_outside(p);
+
 				if (!e.direction) {
+					//If no direction the edge is still connected to an arc: created from a circle event
 					x = this.parabola_intersection(
 						this.box_y * 10,
 						e.arc.left,
@@ -186,11 +192,35 @@ class VoronoiDiagram {
 					); //check this *10 <<------
 					y = e.m * x + e.q;
 					e.direction = new Point(x, y);
+					if (end_outside) {
+						e.ends = [];
+						// p.y - e.direction.y > 0 ? y = 0 : y = this.box_y;
+						this.edge_limit(e, 0);
+					}
+					this.edge_limit(e, this.box_y);
+				} else {
+					if (end_outside) {
+						if (this.point_outside(e.direction)) {
+							this.edges[i] = null; // Remove edge as both ends are outside
+						} else {
+							e.ends = [];
+							p.y - e.direction.y > 0
+								? (y = this.box_y)
+								: (y = 0);
+							this.edge_limit(e, y);
+						}
+					} else{
+					p.y - e.direction.y > 0 ? (y = 0) : (y = this.box_y);
+					this.edge_limit(e, y);
+					}
 				}
-				e1.y - e.direction.y > 0 ? (y = 0) : (y = this.box_y);
-				this.edge_limit(e, y);
-			} else if (ends_numb > 2)
-				throw new Error("segment with more than 2 endpoints");
+
+			} else if (e.ends.length == 0) {
+				//End 1
+				this.edge_limit(e, 0);
+				//End 2
+				this.edge_limit(e, this.box_y);
+			} else throw new Error("segment with more than 2 endpoints");
 		}
 	}
 
@@ -200,6 +230,10 @@ class VoronoiDiagram {
 		let p = new Point(x, y);
 		e.endpoint = p;
 		this.voronoi_vertex.push(p);
+	}
+
+	point_outside(p) {
+		return p.x < 0 || p > this.box_x || p.y < 0 || p.y > this.box_y;
 	}
 }
 
