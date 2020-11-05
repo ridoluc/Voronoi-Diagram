@@ -37,8 +37,8 @@ class SVG_Graphics {
 		let linesSVG = "";
 
 		for (const e of edges) {
-            if(e){
-			linesSVG += "<line x1=" + e.ends[0].x + " y1=" +e.ends[0].y +" x2=" + e.ends[1].x + " y2=" +e.ends[1].y+"></line>";}
+            if(e && e.end && e.start){
+			linesSVG += "<line x1=" + e.end.x + " y1=" +e.end.y +" x2=" + e.start.x + " y2=" +e.start.y+"></line>";}
 		}
 
 		let line_group = document.createElementNS(

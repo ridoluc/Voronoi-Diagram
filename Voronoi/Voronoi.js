@@ -39,9 +39,10 @@ class VoronoiDiagram {
 			}
 
 			let e_qp = new Edge(q.focus, p, p.x);
+			let e_pq = new Edge(p, q.focus, p.x);
 
-			let arc_p = new Arc(q, null, p, e_qp, e_qp);
-			let arc_qr = new Arc(arc_p, q.right, q.focus, e_qp, q.edge.right);
+			let arc_p = new Arc(q, null, p, e_qp, e_pq);
+			let arc_qr = new Arc(arc_p, q.right, q.focus, e_pq, q.edge.right);
 			if (q.right) q.right.left = arc_qr;
 			arc_p.right = arc_qr;
 			q.right = arc_p;
@@ -55,6 +56,7 @@ class VoronoiDiagram {
 			this.add_circle_event(p, arc_qr);
 
 			this.edges.push(e_qp);
+			this.edges.push(e_pq);
 		}
 	}
 
@@ -79,21 +81,8 @@ class VoronoiDiagram {
 
 		this.edges.push(edge_new);
 
-		// if (
-		// 	e.vertex.x >= 0 &&
-		// 	e.vertex.x <= this.box_x &&
-		// 	e.vertex.y >= 0 &&
-		// 	e.vertex.y <= this.box_y
-		// ) {
-		this.voronoi_vertex.push(e.vertex);
-		arc.edge.left.endpoint = arc.edge.right.endpoint = edge_new.endpoint =
-			e.vertex;
-		// } else {
-		// 	arc.edge.left.direction = arc.edge.right.direction = edge_new.direction =
-		// 		e.vertex;
-		// }
-
-		// Set edges end point
+		if (!this.point_outside(e.vertex)) this.voronoi_vertex.push(e.vertex);
+		arc.edge.left.end = arc.edge.right.end = edge_new.start = e.vertex;
 	}
 
 	add_circle_event(p, arc) {
@@ -163,77 +152,125 @@ class VoronoiDiagram {
 	}
 
 	complete_segments() {
+		let r = this.beachline_root;
+		let e, x, y;
+		// Complete edges attached to beachline
+		while (r.right) {
+			e = r.edge.right;
+			x = this.parabola_intersection(
+				this.box_y * 2,
+				e.arc.left,
+				e.arc.right
+			);
+			// If slope has same sign of the difference between start point x coord
+			// and parabola intersection then will intersect the top border (y = 0)
+			e.m * (x - e.start.x) <= 0 ? (y = 0) : (y = this.box_y);
+			// Find end point
+			e.end = this.edge_end(e, y);
+
+			r = r.right;
+		}
+
+		let option;
+
 		for (let i = 0; i < this.edges.length; i++) {
-			let e = this.edges[i];
-			let x, y, p;
+			e = this.edges[i];
+			option =
+				1 * this.point_outside(e.start) + 2 * this.point_outside(e.end);
+				
+			switch (option) {
+				case 3: // Both endpoints outside the canvas
+					this.edges[i] = null;
+					break;
+				case 1: // Start is outside
+					e.start.y < e.end.y ? y = 0 : y = this.box_y;
+					e.start = this.edge_end(e, y);
+					break;
+				case 2: // End is outside
+					e.end.y < e.start.y ? y = 0 : y = this.box_y;
+					e.end = this.edge_end(e, y);
+					break;
+				default:
+					break;
+			}
+			
+			// if(e.start == e.end) this.edges[i] = null;
 
-			if (e.ends[1]) {
-				p = e.ends[1];
-				if (this.point_outside(p)) {
-					let p2 = e.ends[0];
-					if (this.point_outside(p2)) {
-						this.edges[i] = null; // Remove edge as both ends are outside
-					} else {
-						e.ends.pop();
-						p.y - p2.y > 0 ? (y = this.box_y) : (y = 0);
-						this.edge_limit(e, y);
-					}
-				}
-			} else if (e.ends[0]) {
-				p = e.ends[0];
-				let end_outside = this.point_outside(p);
-
-				if (!e.direction) {
-					//If no direction the edge is still connected to an arc: created from a circle event
-					x = this.parabola_intersection(
-						this.box_y * 10,
-						e.arc.left,
-						e.arc.right
-					); //check this *10 <<------
-					y = e.m * x + e.q;
-					e.direction = new Point(x, y);
-					if (end_outside) {
-						e.ends = [];
-						// p.y - e.direction.y > 0 ? y = 0 : y = this.box_y;
-						this.edge_limit(e, 0);
-					}
-					this.edge_limit(e, this.box_y);
-				} else {
-					if (end_outside) {
-						if (this.point_outside(e.direction)) {
-							this.edges[i] = null; // Remove edge as both ends are outside
-						} else {
-							e.ends = [];
-							p.y - e.direction.y > 0
-								? (y = this.box_y)
-								: (y = 0);
-							this.edge_limit(e, y);
-						}
-					} else{
-					p.y - e.direction.y > 0 ? (y = 0) : (y = this.box_y);
-					this.edge_limit(e, y);
-					}
-				}
-
-			} else if (e.ends.length == 0) {
-				//End 1
-				this.edge_limit(e, 0);
-				//End 2
-				this.edge_limit(e, this.box_y);
-			} else throw new Error("segment with more than 2 endpoints");
 		}
 	}
 
-	edge_limit(e, y_lim) {
+	// complete_segments() {
+	// 	for (let i = 0; i < this.edges.length; i++) {
+	// 		let e = this.edges[i];
+	// 		let x, y, p;
+
+	// 		if (e.ends[1]) {
+	// 			p = e.ends[1];
+	// 			if (this.point_outside(p)) {
+	// 				let p2 = e.ends[0];
+	// 				if (this.point_outside(p2)) {
+	// 					this.edges[i] = null; // Remove edge as both ends are outside
+	// 				} else {
+	// 					e.ends.pop();
+	// 					p.y - p2.y > 0 ? (y = this.box_y) : (y = 0);
+	// 					this.edge_limit(e, y);
+	// 				}
+	// 			}
+	// 		} else if (e.ends[0]) {
+	// 			p = e.ends[0];
+	// 			let end_outside = this.point_outside(p);
+
+	// 			if (!e.direction) {
+	// 				//If no direction the edge is still connected to an arc: created from a circle event
+	// 				x = this.parabola_intersection(
+	// 					this.box_y * 10,
+	// 					e.arc.left,
+	// 					e.arc.right
+	// 				); //check this *10 <<------
+	// 				y = e.m * x + e.q;
+	// 				e.direction = new Point(x, y);
+	// 				if (end_outside) {
+	// 					e.ends = [];
+	// 					// p.y - e.direction.y > 0 ? y = 0 : y = this.box_y;
+	// 					this.edge_limit(e, 0);
+	// 				}
+	// 				this.edge_limit(e, this.box_y);
+	// 			} else {
+	// 				if (end_outside) {
+	// 					if (this.point_outside(e.direction)) {
+	// 						this.edges[i] = null; // Remove edge as both ends are outside
+	// 					} else {
+	// 						e.ends = [];
+	// 						p.y - e.direction.y > 0
+	// 							? (y = this.box_y)
+	// 							: (y = 0);
+	// 						this.edge_limit(e, y);
+	// 					}
+	// 				} else{
+	// 				p.y - e.direction.y > 0 ? (y = 0) : (y = this.box_y);
+	// 				this.edge_limit(e, y);
+	// 				}
+	// 			}
+
+	// 		} else if (e.ends.length == 0) {
+	// 			//End 1
+	// 			this.edge_limit(e, 0);
+	// 			//End 2
+	// 			this.edge_limit(e, this.box_y);
+	// 		} else throw new Error("segment with more than 2 endpoints");
+	// 	}
+	// }
+
+	edge_end(e, y_lim) {
 		let x = Math.min(this.box_x, Math.max(0, (y_lim - e.q) / e.m));
 		let y = e.m * x + e.q;
 		let p = new Point(x, y);
-		e.endpoint = p;
 		this.voronoi_vertex.push(p);
+		return p;
 	}
 
 	point_outside(p) {
-		return p.x < 0 || p > this.box_x || p.y < 0 || p.y > this.box_y;
+		return p.x < 0 || p.x > this.box_x || p.y < 0 || p.y > this.box_y;
 	}
 }
 
@@ -255,19 +292,17 @@ class Point {
 }
 
 class Edge {
-	constructor(p1, p2, dir) {
+	constructor(p1, p2, startx) {
 		this.m = -(p1.x - p2.x) / (p1.y - p2.y);
 		this.q =
 			(0.5 * (p1.x ** 2 - p2.x ** 2 + p1.y ** 2 - p2.y ** 2)) /
 			(p1.y - p2.y);
 		this.arc = { left: p1, right: p2 };
-		this.ends = [];
-		this.direction = null;
-		if (dir) this.direction = new Point(dir, this.m * dir + this.q);
+		this.end = null;
+		this.start = null;
+		if (startx) this.start = new Point(startx, this.m * startx + this.q);
 	}
-	set endpoint(p) {
-		this.ends.push(p);
-	}
+
 }
 
 class Event {

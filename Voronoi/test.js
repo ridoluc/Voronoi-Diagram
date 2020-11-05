@@ -2,9 +2,9 @@ let points = [
     new Point(91,168.125),
     new Point(255,228.125),
     new Point(412,225.125),
-    // new Point(220,165.125),
-    // new Point(277,83.125),
-    // new Point(127,242.125),
+    // new Point(171,116.125),
+    // new Point(389,98.125),
+    // new Point(356,196.125),
     // new Point(370,256.125)
 ];
 
@@ -41,8 +41,18 @@ $("svg").on("click", function (event) {
     }
     if(add)points.push(new Point(x, y));
     vor.point_list = points;
+
+
+    let t0 = performance.now();
+
     vor.update();
+
+    let t1 = performance.now();
+    
     draw();
+
+    $("#timer p").text((t1 - t0).toFixed(2) + " ms");
+
 });
 
 function draw(){
