@@ -1,11 +1,10 @@
 let points = [
-    new Point(91,168.125),
-    new Point(255,228.125),
-    new Point(412,225.125),
-    // new Point(171,116.125),
-    // new Point(389,98.125),
-    // new Point(356,196.125),
-    // new Point(370,256.125)
+    // new Point(91,168.125),
+    // new Point(255,228.125),
+    // new Point(412,225.125),
+    new Point(395,78.125),
+    new Point(395,149.125),
+    new Point(406,213.125)
 ];
 
 let vor, gr, _svg_; 
@@ -48,7 +47,7 @@ $("svg").on("click", function (event) {
     vor.update();
 
     let t1 = performance.now();
-    
+
     draw();
 
     $("#timer p").text((t1 - t0).toFixed(2) + " ms");
