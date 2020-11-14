@@ -2,9 +2,9 @@ let points = [
     // new Point(91,168.125),
     // new Point(255,228.125),
     // new Point(412,225.125),
-    new Point(395,78.125),
-    new Point(395,149.125),
-    new Point(406,213.125)
+    new Point(376,53.125),
+    new Point(374,110.125),
+    new Point(371,162.125)
 ];
 
 let vor, gr, _svg_; 

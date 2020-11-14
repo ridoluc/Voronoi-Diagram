@@ -4,6 +4,7 @@ class VoronoiDiagram {
 		this.reset();
 		this.box_x = 500;
 		this.box_y = 300;
+
 	}
 
 	reset() {
@@ -11,10 +12,12 @@ class VoronoiDiagram {
 		this.beachline_root = null;
 		this.voronoi_vertex = [];
 		this.edges = [];
+		this.last_event = null; 	// Needed to know last position of sweepline
 	}
 	update() {
 		this.reset();
 		let points = [];
+		let last_event = null;
 		for (const p of this.point_list) points.push(new Event("point", p));
 		this.event_list.points = points;
 
@@ -22,8 +25,9 @@ class VoronoiDiagram {
 			const e = this.event_list.extract_first();
 			if (e.type == "point") this.point_event(e.position);
 			else if (e.active) this.circle_event(e);
+			last_event = e.position;
 		}
-		this.complete_segments();
+		this.complete_segments(last_event);
 	}
 
 	// Input: Point
@@ -151,17 +155,17 @@ class VoronoiDiagram {
 		return new Point(x, y);
 	}
 
-	complete_segments() {
+	complete_segments(last) {
 		let r = this.beachline_root;
 		let e, x, y;
 		// Complete edges attached to beachline
 		while (r.right) {
 			e = r.edge.right;
 			x = this.parabola_intersection(
-				this.box_y * 5,
+				this.box_y * last.y *1.1,
 				e.arc.left,
 				e.arc.right
-			);
+			);	// Check parabola intersection assuming sweepline position equal to last event increased by 10%
 			y = e.m * x + e.q;
 			
 			// Find end point
