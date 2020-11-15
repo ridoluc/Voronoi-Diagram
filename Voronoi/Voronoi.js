@@ -79,13 +79,13 @@ class VoronoiDiagram {
 		arc.left.right = arc.right;
 		arc.right.left = arc.left;
 
-		this.add_circle_event(p, arc.left);
-		this.add_circle_event(p, arc.right);
-
 		this.edges.push(edge_new);
 
 		if (!this.point_outside(e.vertex)) this.voronoi_vertex.push(e.vertex);
 		arc.edge.left.end = arc.edge.right.end = edge_new.start = e.vertex;
+
+		this.add_circle_event(p, arc.left);
+		this.add_circle_event(p, arc.right);
 	}
 
 	// Input: Point, Point
@@ -121,7 +121,6 @@ class VoronoiDiagram {
 		}
 	}
 
-
 	// Input: float, Point, Point
 	parabola_intersection(y, f1, f2) {
 		let fyDiff = f1.y - f2.y;
@@ -136,13 +135,19 @@ class VoronoiDiagram {
 	}
 
 	edge_intersection(e1, e2) {
-		let mdif = e1.m - e2.m;
-		if (mdif == 0) return null;
-		let x = (e2.q - e1.q) / mdif;
-		let y = e1.m * x + e1.q;
-		return new Point(x, y);
+		if (e1.m == Infinity) return new Point(e1.start.x, e2.getY(e1.start.x));
+		else if (e2.m == Infinity)
+			return new Point(e2.start.x, e1.getY(e2.start.x));
+		else {
+			let mdif = e1.m - e2.m;
+			if (mdif == 0) return null;
+			let x = (e2.q - e1.q) / mdif;
+			let y = e1.getY(x);
+			return new Point(x, y);
+		}
 	}
 
+	// All vertical segments end on the top border: to be checked
 	complete_segments(last) {
 		let r = this.beachline_root;
 		let e, x, y;
@@ -154,7 +159,7 @@ class VoronoiDiagram {
 				e.arc.left,
 				e.arc.right
 			); // Check parabola intersection assuming sweepline position equal to last event increased by 10%
-			y = e.m * x + e.q;
+			y = e.getY(x);
 
 			// Find end point
 			if (
@@ -198,8 +203,8 @@ class VoronoiDiagram {
 	}
 
 	edge_end(e, y_lim) {
-		let x = Math.min(this.box_x, Math.max(0, (y_lim - e.q) / e.m));
-		let y = e.m * x + e.q;
+		let x = Math.min(this.box_x, Math.max(0, e.getX(y_lim)));
+		let y = e.getY(x);
 		let p = new Point(x, y);
 		this.voronoi_vertex.push(p);
 		return p;
@@ -236,11 +241,19 @@ class Edge {
 		this.arc = { left: p1, right: p2 };
 		this.end = null;
 		this.start = null;
-		if (startx) this.start = new Point(startx, this.m * startx + this.q);
+		if (startx)
+			this.start = new Point(
+				startx,
+				this.m != Infinity ? this.getY(startx) : null
+			);
 	}
-	// getY(x){
-
-	// }
+	getY(x) {
+		return x * this.m + this.q;
+	}
+	getX(y) {
+		if (this.m == Infinity) return this.start.x;
+		return (y - this.q) / this.m;
+	}
 }
 
 class Event {
