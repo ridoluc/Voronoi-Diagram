@@ -1,10 +1,9 @@
 class VoronoiDiagram {
-	constructor(points) {
+	constructor(points, width, height) {
 		this.point_list = points;
 		this.reset();
-		this.box_x = 500;
-		this.box_y = 300;
-
+		this.box_x = width;
+		this.box_y = height;
 	}
 
 	reset() {
@@ -12,22 +11,22 @@ class VoronoiDiagram {
 		this.beachline_root = null;
 		this.voronoi_vertex = [];
 		this.edges = [];
-		this.last_event = null; 	// Needed to know last position of sweepline
 	}
+
 	update() {
 		this.reset();
 		let points = [];
-		let last_event = null;
+		let e = null;
 		for (const p of this.point_list) points.push(new Event("point", p));
 		this.event_list.points = points;
 
 		while (this.event_list.length > 0) {
-			const e = this.event_list.extract_first();
+			e = this.event_list.extract_first();
 			if (e.type == "point") this.point_event(e.position);
 			else if (e.active) this.circle_event(e);
-			last_event = e.position;
+			// last_event = e.position;
 		}
-		this.complete_segments(last_event);
+		this.complete_segments(e.position);
 	}
 
 	// Input: Point
@@ -64,7 +63,7 @@ class VoronoiDiagram {
 		}
 	}
 
-	// Input: Circle Event
+	// Input: Event
 	circle_event(e) {
 		let arc = e.caller;
 		let p = e.position;
@@ -89,13 +88,14 @@ class VoronoiDiagram {
 		arc.edge.left.end = arc.edge.right.end = edge_new.start = e.vertex;
 	}
 
+	// Input: Point, Point
 	add_circle_event(p, arc) {
 		if (arc.left && arc.right) {
 			let a = arc.left.focus;
 			let b = arc.focus;
 			let c = arc.right.focus;
 
-			//Compute sine of angle between focii. if positive then edges intersect
+			//Compute sine of angle between focuses. if positive then edges intersect
 			if ((b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y) > 0) {
 				let new_inters = this.edge_intersection(
 					arc.edge.left,
@@ -121,18 +121,6 @@ class VoronoiDiagram {
 		}
 	}
 
-	// Input: Point
-	// Returns the arc it falls on
-	find_arc(p) {
-		let n = this.beachline_root;
-		while (
-			n.right != null &&
-			this.parabola_intersection(p.y, n.focus, n.right.focus) < p.x
-		) {
-			n = n.right;
-		}
-		return n;
-	}
 
 	// Input: float, Point, Point
 	parabola_intersection(y, f1, f2) {
@@ -162,14 +150,18 @@ class VoronoiDiagram {
 		while (r.right) {
 			e = r.edge.right;
 			x = this.parabola_intersection(
-				this.box_y * last.y *1.1,
+				last.y * 1.1,
 				e.arc.left,
 				e.arc.right
-			);	// Check parabola intersection assuming sweepline position equal to last event increased by 10%
+			); // Check parabola intersection assuming sweepline position equal to last event increased by 10%
 			y = e.m * x + e.q;
-			
+
 			// Find end point
-			if ((e.start.y < 0 && y < e.start.y) || (e.start.x < 0 && x < e.start.x) || (e.start.x > this.box_x && x > e.start.x)) {
+			if (
+				(e.start.y < 0 && y < e.start.y) ||
+				(e.start.x < 0 && x < e.start.x) ||
+				(e.start.x > this.box_x && x > e.start.x)
+			) {
 				e.end = e.start; //If invalid make start = end so it will be deleted later
 			} else {
 				// If slope has same sign of the difference between start point x coord
@@ -202,8 +194,6 @@ class VoronoiDiagram {
 				default:
 					break;
 			}
-
-			// if(e.start == e.end) this.edges[i] = null;
 		}
 	}
 
@@ -248,6 +238,9 @@ class Edge {
 		this.start = null;
 		if (startx) this.start = new Point(startx, this.m * startx + this.q);
 	}
+	// getY(x){
+
+	// }
 }
 
 class Event {

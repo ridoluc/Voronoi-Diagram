@@ -2,29 +2,29 @@ let points = [
     // new Point(91,168.125),
     // new Point(255,228.125),
     // new Point(412,225.125),
-    new Point(376,53.125),
-    new Point(374,110.125),
-    new Point(371,162.125)
+    new Point(152,53.125),
+    new Point(152,110.125),
+    new Point(152,162.125)
 ];
 
 let vor, gr, _svg_; 
 
 
 $(document).ready(function () {
-	_svg_ = $("svg");
-    
+	_svg_ = document.getElementById("voronoi_svg");
+
+    vor = new VoronoiDiagram(points, _svg_.width.baseVal.value, _svg_.height.baseVal.value);    
     gr = new SVG_Graphics(_svg_);
-    vor = new VoronoiDiagram(points);
     vor.update();
 
-    draw();
+    gr.draw(points,vor.voronoi_vertex,vor.edges);
 });
 
 
 $("#reset-btn").on("click", function () {
     vor.point_list = [];
     points = [];
-    _svg_.empty();
+    _svg_.textContent = '';
 
 });
 
@@ -48,15 +48,10 @@ $("svg").on("click", function (event) {
 
     let t1 = performance.now();
 
-    draw();
+    gr.draw(points,vor.voronoi_vertex,vor.edges);
 
     $("#timer p").text((t1 - t0).toFixed(2) + " ms");
 
 });
 
-function draw(){
-    _svg_.empty();
-    gr.draw_points(vor.voronoi_vertex, "vertex_svg");
-    gr.draw_points(points,"point_svg");
-    gr.draw_lines(vor.edges);
-}
+
