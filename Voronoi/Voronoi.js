@@ -82,7 +82,7 @@ class VoronoiDiagram {
 		this.edges.push(edge_new);
 
 		if (!this.point_outside(e.vertex)) this.voronoi_vertex.push(e.vertex);
-		arc.edge.left.end = arc.edge.right.end = edge_new.start = e.vertex;
+		arc.edge.left.end = arc.edge.right.end = edge_new.start = e.vertex;	// This needs to come before add_circle_event as it is used there
 
 		this.add_circle_event(p, arc.left);
 		this.add_circle_event(p, arc.right);
@@ -171,6 +171,7 @@ class VoronoiDiagram {
 			} else {
 				// If slope has same sign of the difference between start point x coord
 				// and parabola intersection then will intersect the top border (y = 0)
+				// This is to be changed
 				e.m * (x - e.start.x) <= 0 ? (y = 0) : (y = this.box_y);
 				e.end = this.edge_end(e, y);
 			}
