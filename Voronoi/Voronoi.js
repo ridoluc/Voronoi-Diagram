@@ -40,7 +40,8 @@ class VoronoiDiagram {
 			) {
 				q = q.right;
 			}
-
+			
+			// if(q === this.beachline_root && q.focus.y == p.y) xx = (q.focus.x + p.x)/2 // edge case when the two top sites have same y
 			let e_qp = new Edge(q.focus, p, p.x);
 			let e_pq = new Edge(p, q.focus, p.x);
 
@@ -73,7 +74,7 @@ class VoronoiDiagram {
 		if (arc.left.event) arc.left.event.active = false;
 		if (arc.right.event) arc.right.event.active = false;
 
-		// Adjust beachline
+		// Adjust beachline deleting the shrinking arc
 		arc.left.edge.right = edge_new;
 		arc.right.edge.left = edge_new;
 		arc.left.right = arc.right;
@@ -81,7 +82,7 @@ class VoronoiDiagram {
 
 		this.edges.push(edge_new);
 
-		if (!this.point_outside(e.vertex)) this.voronoi_vertex.push(e.vertex);
+		if (!this.point_outside(e.vertex)) this.voronoi_vertex.push(e.vertex); // Only add the vertex if inside canvas
 		arc.edge.left.end = arc.edge.right.end = edge_new.start = e.vertex;	// This needs to come before add_circle_event as it is used there
 
 		this.add_circle_event(p, arc.left);
@@ -131,7 +132,7 @@ class VoronoiDiagram {
 		let h1 = (-f1.x * b2md + f2.x * b1md) / fyDiff;
 		let h2 = Math.sqrt(b1md * b2md * (fxDiff ** 2 + fyDiff ** 2)) / fyDiff;
 
-		return h1 + h2; //Returning the left x coord of intersection
+		return h1 + h2; //Returning the left x coord of intersection. Remember top canvas is 0 hence parabolas are facing down
 	}
 
 	edge_intersection(e1, e2) {
@@ -147,7 +148,6 @@ class VoronoiDiagram {
 		}
 	}
 
-	// All vertical segments end on the top border: to be checked
 	complete_segments(last) {
 		let r = this.beachline_root;
 		let e, x, y;
@@ -171,8 +171,8 @@ class VoronoiDiagram {
 			} else {
 				// If slope has same sign of the difference between start point x coord
 				// and parabola intersection then will intersect the top border (y = 0)
-				// This is to be changed
-				e.m * (x - e.start.x) <= 0 ? (y = 0) : (y = this.box_y);
+				if(e.m == Infinity) y = this.box_y;	// Iv edge is vertical and is connected to the beachline will end on the bottom border
+				else e.m * (x - e.start.x) <= 0 ? (y = 0) : (y = this.box_y);
 				e.end = this.edge_end(e, y);
 			}
 			r = r.right;
@@ -206,6 +206,7 @@ class VoronoiDiagram {
 	edge_end(e, y_lim) {
 		let x = Math.min(this.box_x, Math.max(0, e.getX(y_lim)));
 		let y = e.getY(x);
+		if(!y) y = y_lim // In this case the edge is vertical
 		let p = new Point(x, y);
 		this.voronoi_vertex.push(p);
 		return p;
@@ -249,6 +250,7 @@ class Edge {
 			);
 	}
 	getY(x) {
+		if (this.m == Infinity) return null;
 		return x * this.m + this.q;
 	}
 	getX(y) {

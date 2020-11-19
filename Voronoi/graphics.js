@@ -49,7 +49,7 @@ class SVG_Graphics {
 
 	draw(p,v,e){
 		this._svg_.textContent = '';
-		gr.draw_points(v, this.vertex_style);
+		// gr.draw_points(v, this.vertex_style);
 		this.draw_points(p,this.point_style);
 		this.draw_lines(e);
 	}

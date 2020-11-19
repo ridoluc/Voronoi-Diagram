@@ -5,11 +5,13 @@ let points = [
     new Point(152,110.125),
     new Point(192,110.125),
     new Point(160,30.125),
-    new Point(140,86.125)
+    new Point(140,86.125),
+    new Point(450,200.125)
+
 ];
 
 let vor, gr, _svg_; 
-
+let moving_point 
 
 $(document).ready(function () {
 	_svg_ = document.getElementById("voronoi_svg");
@@ -55,4 +57,33 @@ $("svg").on("click", function (event) {
 
 });
 
+$("svg").on("mousemove", function (event) {
+    let x = event.pageX - $(this).offset().left;
+    let y = event.pageY - $(this).offset().top;
 
+    if(moving_point === points[points.length-1])points.pop(); 
+
+    /* Add point */
+    let add = true;
+    for(const p of points){
+        let d = Math.sqrt((x-p.x)**2+(y-p.y)**2);
+        if(d<3) add = false;
+    }
+    if(add){
+        moving_point = new Point(x, y)
+        points.push(moving_point);
+    }
+    vor.point_list = points;
+
+
+    let t0 = performance.now();
+
+    vor.update();
+
+    let t1 = performance.now();
+
+    gr.draw(points,vor.voronoi_vertex,vor.edges);
+
+    $("#timer p").text((t1 - t0).toFixed(2) + " ms");
+
+});
