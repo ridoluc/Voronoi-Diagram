@@ -13,7 +13,7 @@ let points = [
 let vor, gr, _svg_; 
 let moving_point 
 
-$(document).ready(function () {
+(function () {
 	_svg_ = document.getElementById("voronoi_svg");
 
     vor = new VoronoiDiagram(points, _svg_.width.baseVal.value, _svg_.height.baseVal.value);    
@@ -21,19 +21,24 @@ $(document).ready(function () {
     vor.update();
 
     gr.draw(points,vor.voronoi_vertex,vor.edges);
-});
+
+    document.getElementById("voronoi_svg").onclick = addPoint;
+    document.getElementById("voronoi_svg").onmousemove = update;
+	document.getElementById("reset-btn").onclick = reset;
+	document.getElementById("generate-btn").onclick = generate;
+})();
 
 
-$("#reset-btn").on("click", function () {
+function reset() {
     vor.point_list = [];
     points = [];
     _svg_.textContent = '';
 
-});
+};
 
-$("svg").on("click", function (event) {
-    let x = event.pageX - $(this).offset().left;
-    let y = event.pageY - $(this).offset().top;
+function addPoint(event) {
+    let x = event.offsetX;
+    let y = event.offsetY;
 
     /* Add point */
     let add = true;
@@ -53,13 +58,13 @@ $("svg").on("click", function (event) {
 
     gr.draw(points,vor.voronoi_vertex,vor.edges);
 
-    $("#timer p").text((t1 - t0).toFixed(2) + " ms");
+    document.getElementById("timer").innerText= (t1 - t0).toFixed(2) + " ms";
 
-});
+};
 
-$("svg").on("mousemove", function (event) {
-    let x = event.pageX - $(this).offset().left;
-    let y = event.pageY - $(this).offset().top;
+function update(event) {
+    let x = event.offsetX;
+    let y = event.offsetY;
 
     if(moving_point === points[points.length-1])points.pop(); 
 
@@ -84,6 +89,38 @@ $("svg").on("mousemove", function (event) {
 
     gr.draw(points,vor.voronoi_vertex,vor.edges);
 
-    $("#timer p").text((t1 - t0).toFixed(2) + " ms");
+    document.getElementById("timer").innerText = (t1 - t0).toFixed(2) + " ms";
 
-});
+
+};
+
+
+function generate() {
+	let N = parseInt(document.getElementById("generate-text").value);
+    points= generatePoints(N);
+    vor.point_list = points;
+    vor.update();
+    gr.draw(vor.point_list,vor.voronoi_vertex,vor.edges);
+    
+}
+
+function generatePoints(N) {
+	let W = _svg_.width.baseVal.value * 0.99;
+	let H = _svg_.height.baseVal.value * 0.99;
+
+	let points = [];
+	for (i = 0; i < N; i++) {
+		var pt = new Point(Math.random() * W, Math.random() * H, 2);
+		var good = true;
+		for (const p of points) {
+			let dist = Math.sqrt((pt.x - p.x) ** 2 + (pt.y - p.y) ** 2);
+			if (dist < 3) {
+				good = false;
+				break;
+			}
+		}
+		good ? points.push(pt) : i--;
+	}
+
+	return points;
+}

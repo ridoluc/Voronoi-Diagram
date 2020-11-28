@@ -207,7 +207,7 @@ class VoronoiDiagram {
 			} else {
 				// If slope has same sign of the difference between start point x coord
 				// and parabola intersection then will intersect the top border (y = 0)
-				if(e.m == Infinity) y = this.box_y;	// Iv edge is vertical and is connected to the beachline will end on the bottom border
+				if(e.m == Infinity) y = this.box_y;	// If edge is vertical and is connected to the beachline will end on the bottom border
 				else e.m * (x - e.start.x) <= 0 ? (y = 0) : (y = this.box_y);
 				e.end = this.edge_end(e, y);
 			}
