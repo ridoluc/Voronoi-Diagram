@@ -1,4 +1,10 @@
 class VoronoiDiagram {
+	/**
+	 * Creates an instance of the Voronoi diagram builder
+	 * @param {[Point]} points - List of Points objects p having x and y coordinate p.x and p.y
+	 * @param {float} width - Width of the canvas
+	 * @param {float} height - Height of the canvas
+	 */
 	constructor(points, width, height) {
 		this.point_list = points;
 		this.reset();
@@ -13,6 +19,9 @@ class VoronoiDiagram {
 		this.edges = [];
 	}
 
+	/**
+	 * Builds the Voronoi diagram computing the Voroni vertices and edges
+	 */
 	update() {
 		this.reset();
 		let points = [];
@@ -29,7 +38,10 @@ class VoronoiDiagram {
 		this.complete_segments(e.position);
 	}
 
-	// Input: Point
+	/**
+	 * Handles the Point Events
+	 * @param {Point} p - a point object that must have coordinates p.x and p.y
+	 */
 	point_event(p) {
 		let q = this.beachline_root;
 		if (q == null) this.beachline_root = new Arc(null, null, p, null, null);
@@ -64,7 +76,10 @@ class VoronoiDiagram {
 		}
 	}
 
-	// Input: Event
+	/**
+	 * Handles the circle event
+	 * @param {Event} e - Event type object
+	 */
 	circle_event(e) {
 		let arc = e.caller;
 		let p = e.position;
@@ -89,7 +104,11 @@ class VoronoiDiagram {
 		this.add_circle_event(p, arc.right);
 	}
 
-	// Input: Point, Point
+	/**
+	 * Tests if the arc event is valid and adds it into the queue
+	 * @param {Point} p - Current position of the sweepline
+	 * @param {Arc} arc - The Arc tested
+	 */
 	add_circle_event(p, arc) {
 		if (arc.left && arc.right) {
 			let a = arc.left.focus;
@@ -123,6 +142,13 @@ class VoronoiDiagram {
 	}
 
 	// Input: float, Point, Point
+	/**
+	 * Computes the intersection of two parabolas given the directrix
+	 * @param {float} y - position of the directrix (sweepline)
+	 * @param {Point} f1 - Focus of first parabola
+	 * @param {Point} f2 - Focus of second parabola
+	 * @returns	{float} Intersection x-coordinate
+	 */
 	parabola_intersection(y, f1, f2) {
 		let fyDiff = f1.y - f2.y;
 		if (fyDiff == 0) return (f1.x + f2.x) / 2;
@@ -132,9 +158,15 @@ class VoronoiDiagram {
 		let h1 = (-f1.x * b2md + f2.x * b1md) / fyDiff;
 		let h2 = Math.sqrt(b1md * b2md * (fxDiff ** 2 + fyDiff ** 2)) / fyDiff;
 
-		return h1 + h2; //Returning the left x coord of intersection. Remember top canvas is 0 hence parabolas are facing down
+		return h1 + h2; //Returning the left x coord of intersection. Remember top of canvas is 0 hence parabolas are facing down
 	}
 
+	/**
+	 * Computes the intersection point of two edges		
+	 * @param {Edge} e1 - First edge
+	 * @param {Edge} e2 - Second edge
+	 * @returns {Point} Intersection point
+	 */
 	edge_intersection(e1, e2) {
 		if (e1.m == Infinity) return new Point(e1.start.x, e2.getY(e1.start.x));
 		else if (e2.m == Infinity)
@@ -148,6 +180,10 @@ class VoronoiDiagram {
 		}
 	}
 
+	/**
+	 * Completes the Voronoi edges taking into account the canvas sizes
+	 * @param {Point} last - last point extracted from the queue
+	 */
 	complete_segments(last) {
 		let r = this.beachline_root;
 		let e, x, y;
@@ -203,6 +239,11 @@ class VoronoiDiagram {
 		}
 	}
 
+	/**
+	 * Computes the intersection point between an edge and the canvas bounding box
+	 * @param {Edge} e - Edge being completed
+	 * @param {float} y_lim - Either 0 or y limit of the canvas
+	 */
 	edge_end(e, y_lim) {
 		let x = Math.min(this.box_x, Math.max(0, e.getX(y_lim)));
 		let y = e.getY(x);
@@ -212,6 +253,10 @@ class VoronoiDiagram {
 		return p;
 	}
 
+	/**
+	 * Tests if a point is outside the canvas bounding box
+	 * @param {Point} p - Point tested
+	 */
 	point_outside(p) {
 		return p.x < 0 || p.x > this.box_x || p.y < 0 || p.y > this.box_y;
 	}
