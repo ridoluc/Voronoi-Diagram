@@ -6,10 +6,12 @@ Fast and simple implementation of Fortune's Algorithm for building Voronoi diagr
 Just create an instance of the `VoronoiDiagram` class providing a list of points and width and height of the canvas 
 
 ```javascript
-    let points = [  new Point(146,180.125),
-                    new Point(235,200.125),
-                    new Point(215,68.125)];
-                    
+    let points = [  
+                    new Point(140,180),
+                    new Point(230,200),
+                    new Point(210,60)
+                    ];
+
     let height = 300;
     let width = 300;
 
