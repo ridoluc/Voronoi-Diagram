@@ -99,8 +99,13 @@ function generate() {
 	let N = parseInt(document.getElementById("generate-text").value);
     points= generatePoints(N);
     vor.point_list = points;
+    let t0 = performance.now();
     vor.update();
+    let t1 = performance.now();
+
     gr.draw(vor.point_list,vor.voronoi_vertex,vor.edges);
+    document.getElementById("timer").innerText = (t1 - t0).toFixed(2) + " ms";
+
     
 }
 
